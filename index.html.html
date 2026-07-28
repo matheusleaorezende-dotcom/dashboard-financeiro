@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Financeiro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            color-scheme: light;
+            --primary: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #ea580c;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text: #1e293b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: #f1f5f9;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .card-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .card-change {
+            font-size: 12px;
+            color: var(--success);
+        }
+
+        .card-change.negative {
+            color: var(--danger);
+        }
+
+        .card.success .card-value {
+            color: var(--success);
+        }
+
+        .card.danger .card-value {
+            color: var(--danger);
+        }
+
+        .card.warning .card-value {
+            color: var(--warning);
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-container h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        canvas {
+            max-height: 300px;
+        }
+
+        .table-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            overflow-x: auto;
+        }
+
+        .table-container h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--bg);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            color: #64748b;
+            border-bottom: 1px solid var(--border);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: var(--bg);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 24px;
+            justify-content: flex-end;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #16a34a;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 2000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .info-banner {
+            background: #dbeafe;
+            border-left: 4px solid var(--primary);
+            padding: 12px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            color: #1e40af;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .card-value {
+                font-size: 24px;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>📊 Dashboard Financeiro</h1>
+                <p style="color: #64748b; font-size: 13px; margin-top: 4px;">Atualizado em <span id="lastUpdate"></span></p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-secondary" onclick="copyLinkToClipboard()">🔗 Copiar Link</button>
+                <button class="btn-secondary" onclick="exportData()">📥 Exportar</button>
+                <button class="btn-secondary" onclick="importData()">📤 Importar</button>
+                <button class="btn-primary" onclick="openEditModal()">✏️ Editar Dados</button>
+            </div>
+        </div>
+
+        <div class="info-banner">
+            💡 Você pode compartilhar este link via WhatsApp. Os dados são salvos localmente no seu dispositivo.
+        </div>
+
+        <div class="cards-grid">
+            <div class="card success">
+                <div class="card-label">Receita Total</div>
+                <div class="card-value" id="totalReceita">R$ 0,00</div>
+                <div class="card-change" id="receitaChange">+0% vs mês anterior</div>
+            </div>
+            <div class="card danger">
+                <div class="card-label">Despesas Total</div>
+                <div class="card-value" id="totalDespesas">R$ 0,00</div>
+                <div class="card-change negative" id="despesasChange">+0% vs mês anterior</div>
+            </div>
+            <div class="card warning">
+                <div class="card-label">Lucro Líquido</div>
+                <div class="card-value" id="lucroLiquido">R$ 0,00</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Margem de Lucro</div>
+                <div class="card-value" id="margemLucro">0%</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-container">
+                <h3>Receita vs Despesas (Últimos 6 meses)</h3>
+                <canvas id="comparisonChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Distribuição de Despesas</h3>
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <h3>Transações Recentes</h3>
+            <table id="transactionsTable">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Descrição</th>
+                        <th>Categoria</th>
+                        <th>Valor</th>
+                        <th>Tipo</th>
+                    </tr>
+                </thead>
+                <tbody id="transactionsBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Modal de Edição -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <h2>Editar Indicadores Financeiros</h2>
+            <div class="form-group">
+                <label>Receita Total (Mês Atual)</label>
+                <input type="number" id="inputReceita" placeholder="0.00" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Receita Anterior (Comparação)</label>
+                <input type="number" id="inputReceitaAnterior" placeholder="0.00" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Despesas Total (Mês Atual)</label>
+                <input type="number" id="inputDespesas" placeholder="0.00" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Despesas Anterior (Comparação)</label>
+                <input type="number" id="inputDespesasAnterior" placeholder="0.00" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Despesa Fixa (aluguel, salários, etc)</label>
+                <input type="number" id="inputDespesaFixa" placeholder="0.00" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Despesa Variável (marketing, suprimentos, etc)</label>
+                <input type="number" id="inputDespesaVariavel" placeholder="0.00" step="0.01">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeEditModal()">Cancelar</button>
+                <button class="btn-primary" onclick="saveEditModal()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados padrão
+        const defaultData = {
+            receita: 50000,
+            receitaAnterior: 45000,
+            despesas: 30000,
+            despesasAnterior: 28000,
+            despesaFixa: 15000,
+            despesaVariavel: 15000,
+            transactions: [
+                { date: '2024-01-15', desc: 'Vendas - Cliente A', category: 'Receita', value: 15000, type: 'Entrada' },
+                { date: '2024-01-14', desc: 'Aluguel', category: 'Fixa', value: 8000, type: 'Saída' },
+                { date: '2024-01-13', desc: 'Fornecedor B', category: 'Variável', value: 5000, type: 'Saída' },
+                { date: '2024-01-12', desc: 'Vendas - Cliente B', category: 'Receita', value: 12000, type: 'Entrada' },
+                { date: '2024-01-11', desc: 'Marketing Digital', category: 'Variável', value: 3000, type: 'Saída' }
+            ],
+            historico: [
+                { mes: 'Jun', receita: 45000, despesas: 25000 },
+                { mes: 'Jul', receita: 48000, despesas: 26000 },
+                { mes: 'Ago', receita: 52000, despesas: 29000 },
+                { mes: 'Set', receita: 49000, despesas: 27000 },
+                { mes: 'Out', receita: 55000, despesas: 31000 },
+                { mes: 'Nov', receita: 50000, despesas: 30000 }
+            ]
+        };
+
+        let data = defaultData;
+        let comparisonChart = null;
+        let pieChart = null;
+
+        function loadData() {
+            const stored = localStorage.getItem('dashboardData');
+            if (stored) {
+                data = JSON.parse(stored);
+            }
+            updateDashboard();
+        }
+
+        function saveData() {
+            localStorage.setItem('dashboardData', JSON.stringify(data));
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            updateCards();
+            updateCharts();
+            updateTransactionTable();
+            updateLastUpdate();
+        }
+
+        function updateCards() {
+            const receita = data.receita || 0;
+            const despesas = data.despesas || 0;
+            const lucro = receita - despesas;
+            const margem = receita > 0 ? ((lucro / receita) * 100).toFixed(1) : 0;
+
+            const receitaChange = data.receitaAnterior ? (((receita - data.receitaAnterior) / data.receitaAnterior) * 100).toFixed(1) : 0;
+            const despesasChange = data.despesasAnterior ? (((despesas - data.despesasAnterior) / data.despesasAnterior) * 100).toFixed(1) : 0;
+
+            document.getElementById('totalReceita').textContent = formatCurrency(receita);
+            document.getElementById('receitaChange').textContent = `${receitaChange >= 0 ? '+' : ''}${receitaChange}% vs mês anterior`;
+            document.getElementById('totalDespesas').textContent = formatCurrency(despesas);
+            document.getElementById('despesasChange').textContent = `${despesasChange >= 0 ? '+' : ''}${despesasChange}% vs mês anterior`;
+            document.getElementById('lucroLiquido').textContent = formatCurrency(lucro);
+            document.getElementById('margemLucro').textContent = `${margem}%`;
+        }
+
+        function updateCharts() {
+            const historico = data.historico || [];
+
+            // Gráfico de comparação
+            const ctxComparison = document.getElementById('comparisonChart').getContext('2d');
+            if (comparisonChart) comparisonChart.destroy();
+
+            comparisonChart = new Chart(ctxComparison, {
+                type: 'line',
+                data: {
+                    labels: historico.map(h => h.mes),
+                    datasets: [
+                        {
+                            label: 'Receita',
+                            data: historico.map(h => h.receita),
+                            borderColor: '#16a34a',
+                            backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Despesas',
+                            data: historico.map(h => h.despesas),
+                            borderColor: '#dc2626',
+                            backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { callback: v => 'R$ ' + v.toLocaleString('pt-BR') }
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de pizza
+            const ctxPie = document.getElementById('pieChart').getContext('2d');
+            if (pieChart) pieChart.destroy();
+
+            pieChart = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Despesas Fixas', 'Despesas Variáveis'],
+                    datasets: [{
+                        data: [data.despesaFixa || 0, data.despesaVariavel || 0],
+                        backgroundColor: ['#ea580c', '#2563eb'],
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true }
+                    }
+                }
+            });
+        }
+
+        function updateTransactionTable() {
+            const tbody = document.getElementById('transactionsBody');
+            tbody.innerHTML = '';
+            (data.transactions || []).slice(0, 10).forEach(t => {
+                const row = `
+                    <tr>
+                        <td>${t.date}</td>
+                        <td>${t.desc}</td>
+                        <td>${t.category}</td>
+                        <td>${formatCurrency(t.value)}</td>
+                        <td><strong style="color: ${t.type === 'Entrada' ? '#16a34a' : '#dc2626'}">${t.type}</strong></td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function updateLastUpdate() {
+            const now = new Date();
+            document.getElementById('lastUpdate').textContent = now.toLocaleDateString('pt-BR') + ' às ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function formatCurrency(value) {
+            return 'R$ ' + parseFloat(value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function openEditModal() {
+            document.getElementById('inputReceita').value = data.receita || 0;
+            document.getElementById('inputReceitaAnterior').value = data.receitaAnterior || 0;
+            document.getElementById('inputDespesas').value = data.despesas || 0;
+            document.getElementById('inputDespesasAnterior').value = data.despesasAnterior || 0;
+            document.getElementById('inputDespesaFixa').value = data.despesaFixa || 0;
+            document.getElementById('inputDespesaVariavel').value = data.despesaVariavel || 0;
+            document.getElementById('editModal').classList.add('active');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('active');
+        }
+
+        function copyLinkToClipboard() {
+            const link = window.location.href;
+            navigator.clipboard.writeText(link).then(() => {
+                showToast('✅ Link copiado para a área de transferência!');
+            }).catch(() => {
+                // Fallback para navegadores antigos
+                const input = document.createElement('input');
+                input.value = link;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showToast('✅ Link copiado para a área de transferência!');
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease-out reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 2000);
+        }
+
+        function saveEditModal() {
+            data.receita = parseFloat(document.getElementById('inputReceita').value) || 0;
+            data.receitaAnterior = parseFloat(document.getElementById('inputReceitaAnterior').value) || 0;
+            data.despesas = parseFloat(document.getElementById('inputDespesas').value) || 0;
+            data.despesasAnterior = parseFloat(document.getElementById('inputDespesasAnterior').value) || 0;
+            data.despesaFixa = parseFloat(document.getElementById('inputDespesaFixa').value) || 0;
+            data.despesaVariavel = parseFloat(document.getElementById('inputDespesaVariavel').value) || 0;
+            saveData();
+            closeEditModal();
+        }
+
+        function exportData() {
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'dashboard-dados.json';
+            a.click();
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        data = JSON.parse(event.target.result);
+                        saveData();
+                        alert('Dados importados com sucesso!');
+                    } catch (err) {
+                        alert('Erro ao importar dados: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+
+        // Inicializar
+        window.addEventListener('DOMContentLoaded', loadData);
+    </script>
+</body>
+</html>
